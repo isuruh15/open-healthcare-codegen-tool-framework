@@ -309,6 +309,7 @@ public class OASGenerator {
 
     /**
      * Generates security scopes for a specific operation type.
+     * Includes both resource-specific scopes and wildcard scopes.
      *
      * @param resourceType The FHIR resource type
      * @param operationType The operation type (read, create, update, delete, search)
@@ -316,32 +317,21 @@ public class OASGenerator {
      */
     protected SecurityRequirement generateSecurityScopes(String resourceType, String operationType) {
         List<String> scopes = new ArrayList<>();
-        String scopeSuffix;
+        String scopeSuffix = switch (operationType) {
+            case "create" -> ".c";
+            case "update", "patch" -> ".u";
+            case "delete" -> ".d";
+            case "search" -> ".s";
+            default -> ".r";
+        };
 
-        switch (operationType) {
-            case "read":
-                scopeSuffix = ".r";
-                break;
-            case "create":
-                scopeSuffix = ".c";
-                break;
-            case "update":
-            case "patch":
-                scopeSuffix = ".u";
-                break;
-            case "delete":
-                scopeSuffix = ".d";
-                break;
-            case "search":
-                scopeSuffix = ".s";
-                break;
-            default:
-                scopeSuffix = ".r";
-        }
-
+        // Add resource-specific scopes
         scopes.add("patient/" + resourceType + scopeSuffix);
+        scopes.add("patient/*" + scopeSuffix);
         scopes.add("user/" + resourceType + scopeSuffix);
+        scopes.add("user/*" + scopeSuffix);
         scopes.add("system/" + resourceType + scopeSuffix);
+        scopes.add("system/*" + scopeSuffix);
 
         return new SecurityRequirement().addList("default", scopes);
     }
